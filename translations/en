@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Smart Doorbell",
+        "description": "Connect a binary sensor trigger to smart notification actions.",
+        "data": {
+          "doorbell_name": "Doorbell Name (e.g. Building Door)",
+          "trigger_entity": "Trigger Binary Sensor (from ESPHome)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This trigger entity is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "light_flash": {
+        "title": "💡 Light Flash",
+        "description": "Flash one or more lights when the doorbell rings.",
+        "data": {
+          "light_entities": "Lights to flash",
+          "light_flash_duration": "Flash duration (seconds)",
+          "dnd_affects_lights": "Suppress during Do Not Disturb"
+        }
+      },
+      "telegram": {
+        "title": "📱 Telegram Notification",
+        "description": "Send a Telegram message via the telegram_bot integration.",
+        "data": {
+          "telegram_message": "Message text",
+          "dnd_affects_telegram": "Suppress during Do Not Disturb"
+        }
+      },
+      "speaker": {
+        "title": "🔊 Speaker Announcement — General",
+        "description": "Select speakers and set the master volume modifier.",
+        "data": {
+          "speaker_entities": "Speaker media players",
+          "overall_volume": "Overall volume modifier (%)",
+          "dnd_affects_speaker": "Suppress during Do Not Disturb"
+        }
+      },
+      "speaker_detail": {
+        "title": "🔊 Speaker Settings — {speaker}",
+        "description": "Configure the ringtone and TTS for this speaker.",
+        "data": {
+          "speaker_volume": "Volume (%)",
+          "ringtone_path": "Ringtone file path (e.g. /media/doorbell.mp3)",
+          "ringtone_duration": "Ringtone duration (seconds)",
+          "tts_enabled": "Play TTS announcement after ringtone",
+          "tts_realtime": "Use real-time TTS (typed text below)",
+          "tts_realtime_text": "TTS message text",
+          "tts_file_path": "Pre-recorded TTS file path (if not real-time)"
+        }
+      },
+      "dnd": {
+        "title": "🌙 Do Not Disturb Schedule",
+        "description": "Suppress selected notifications during quiet hours. You can also toggle DND manually via the switch entity.",
+        "data": {
+          "dnd_enabled": "Enable scheduled Do Not Disturb",
+          "dnd_start": "Quiet hours start",
+          "dnd_end": "Quiet hours end"
+        }
+      }
+    }
+  }
+}
