@@ -120,7 +120,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
             if self._selected_speakers:
                 return await self.async_step_speaker_detail()
             self._options[CONF_SPEAKER_CONFIGS] = []
-            return await self.async_step_dnd()
+            return await self.async_step_debounce()
 
         opts = self._options
         existing_speakers = [
@@ -167,29 +167,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
             if self._speaker_index < len(self._selected_speakers):
                 return await self.async_step_speaker_detail()
             self._options[CONF_SPEAKER_CONFIGS] = self._speaker_configs
-            return await self.async_step_dnd()
-
-        existing = next(
-            (
-                cfg for cfg in self._options.get(CONF_SPEAKER_CONFIGS, [])
-                if cfg.get(CONF_SPEAKER_ENTITY) == entity_id
-            ),
-            {},
-        )
-
-    async def async_step_speaker_detail(self, user_input=None):
-        entity_id = self._selected_speakers[self._speaker_index]
-
-        if user_input is not None:
-            self._speaker_configs.append({
-                CONF_SPEAKER_ENTITY: entity_id,
-                **user_input,
-            })
-            self._speaker_index += 1
-            if self._speaker_index < len(self._selected_speakers):
-                return await self.async_step_speaker_detail()
-            self._options[CONF_SPEAKER_CONFIGS] = self._speaker_configs
-            return await self.async_step_dnd()
+            return await self.async_step_debounce()
 
         existing = next(
             (
@@ -274,7 +252,36 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 5 — Do Not Disturb
+    # Step 5 — Debounce
+    # ------------------------------------------------------------------ #
+    async def async_step_debounce(self, user_input=None):
+        if user_input is not None:
+            self._options.update(user_input)
+            return await self.async_step_dnd()
+
+        opts = self._options
+        return self.async_show_form(
+            step_id="debounce",
+            data_schema=vol.Schema({
+                vol.Optional(
+                    CONF_DEBOUNCE_ENABLED,
+                    default=opts.get(CONF_DEBOUNCE_ENABLED, False),
+                ): bool,
+                vol.Optional(
+                    CONF_DEBOUNCE_DURATION,
+                    default=opts.get(CONF_DEBOUNCE_DURATION, 0.5),
+                ): selector.selector({
+                    "number": {
+                        "min": 0.1, "max": 10,
+                        "step": 0.1,
+                        "unit_of_measurement": "s", "mode": "slider"
+                    }
+                }),
+            }),
+        )
+
+    # ------------------------------------------------------------------ #
+    # Step 6 — Do Not Disturb
     # ------------------------------------------------------------------ #
     async def async_step_dnd(self, user_input=None):
         if user_input is not None:

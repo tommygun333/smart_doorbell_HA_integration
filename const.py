@@ -39,6 +39,10 @@ CONF_DND_ENABLED = "dnd_enabled"
 CONF_DND_START = "dnd_start"
 CONF_DND_END = "dnd_end"
 
+# Debounce
+CONF_DEBOUNCE_ENABLED = "debounce_enabled"
+CONF_DEBOUNCE_DURATION = "debounce_duration"
+
 # Runtime switch keys
 SWITCH_LIGHT_FLASH = "light_flash"
 SWITCH_TELEGRAM = "telegram"

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import datetime
 from datetime import time as dt_time
 
@@ -21,6 +22,7 @@ from .const import (
     CONF_TTS_ENABLED, CONF_TTS_REALTIME, CONF_TTS_REALTIME_TEXT,
     CONF_TTS_ENGINE, CONF_TTS_FILE_PATH,
     CONF_DND_ENABLED, CONF_DND_START, CONF_DND_END,
+    CONF_DEBOUNCE_ENABLED, CONF_DEBOUNCE_DURATION,
     SWITCH_LIGHT_FLASH, SWITCH_TELEGRAM, SWITCH_SPEAKER, SWITCH_DND_MANUAL,
     DEFAULT_SWITCHES,
 )
@@ -69,6 +71,7 @@ class DoorbellManager:
         self.hass = hass
         self.entry = entry
         self._unsub_listener = None
+        self._last_ring_time: float = 0.0
 
     async def async_setup(self) -> None:
         trigger = self.entry.data[CONF_TRIGGER_ENTITY]
@@ -105,6 +108,25 @@ class DoorbellManager:
     def _switch_on(self, key: str) -> bool:
         return self.hass.data[DOMAIN][self.entry.entry_id]["switches"].get(key, False)
 
+    def _is_debounced(self) -> bool:
+        """Check if the doorbell ring should be debounced."""
+        opts = self.entry.options
+        if not opts.get(CONF_DEBOUNCE_ENABLED, False):
+            return False
+        
+        debounce_duration: float = opts.get(CONF_DEBOUNCE_DURATION, 0.5)
+        current_time = time.time()
+        
+        if current_time - self._last_ring_time < debounce_duration:
+            _LOGGER.debug(
+                "Doorbell '%s' ring ignored due to debounce (%.2f seconds remaining)",
+                self._name,
+                debounce_duration - (current_time - self._last_ring_time),
+            )
+            return True
+        
+        return False
+
     def _dnd_active(self) -> bool:
         if self._switch_on(SWITCH_DND_MANUAL):
             return True
@@ -122,6 +144,12 @@ class DoorbellManager:
             return False
 
     async def _handle_ring(self) -> None:
+        # Check if ring should be debounced
+        if self._is_debounced():
+            return
+        
+        self._last_ring_time = time.time()
+        
         _LOGGER.info("Doorbell '%s' rang!", self._name)
         opts = self.entry.options
         dnd = self._dnd_active()
