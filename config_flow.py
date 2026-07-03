@@ -269,11 +269,11 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
                 ): bool,
                 vol.Optional(
                     CONF_DEBOUNCE_DURATION,
-                    default=opts.get(CONF_DEBOUNCE_DURATION, 0.5),
+                    default=opts.get(CONF_DEBOUNCE_DURATION, DEBOUNCE_DEFAULT_DURATION),
                 ): selector.selector({
                     "number": {
-                        "min": 0.1, "max": 10,
-                        "step": 0.1,
+                        "min": DEBOUNCE_MIN_DURATION, "max": DEBOUNCE_MAX_DURATION,
+                        "step": DEBOUNCE_DURATION_STEP,
                         "unit_of_measurement": "s", "mode": "slider"
                     }
                 }),

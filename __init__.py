@@ -22,7 +22,7 @@ from .const import (
     CONF_TTS_ENABLED, CONF_TTS_REALTIME, CONF_TTS_REALTIME_TEXT,
     CONF_TTS_ENGINE, CONF_TTS_FILE_PATH,
     CONF_DND_ENABLED, CONF_DND_START, CONF_DND_END,
-    CONF_DEBOUNCE_ENABLED, CONF_DEBOUNCE_DURATION,
+    CONF_DEBOUNCE_ENABLED, CONF_DEBOUNCE_DURATION, DEBOUNCE_DEFAULT_DURATION,
     SWITCH_LIGHT_FLASH, SWITCH_TELEGRAM, SWITCH_SPEAKER, SWITCH_DND_MANUAL,
     DEFAULT_SWITCHES,
 )
@@ -114,14 +114,15 @@ class DoorbellManager:
         if not opts.get(CONF_DEBOUNCE_ENABLED, False):
             return False
         
-        debounce_duration: float = opts.get(CONF_DEBOUNCE_DURATION, 0.5)
+        debounce_duration: float = opts.get(CONF_DEBOUNCE_DURATION, DEBOUNCE_DEFAULT_DURATION)
         current_time = time.time()
+        time_since_last_ring = current_time - self._last_ring_time
         
-        if current_time - self._last_ring_time < debounce_duration:
+        if time_since_last_ring < debounce_duration:
             _LOGGER.debug(
                 "Doorbell '%s' ring ignored due to debounce (%.2f seconds remaining)",
                 self._name,
-                debounce_duration - (current_time - self._last_ring_time),
+                debounce_duration - time_since_last_ring,
             )
             return True
         

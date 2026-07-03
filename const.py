@@ -42,6 +42,10 @@ CONF_DND_END = "dnd_end"
 # Debounce
 CONF_DEBOUNCE_ENABLED = "debounce_enabled"
 CONF_DEBOUNCE_DURATION = "debounce_duration"
+DEBOUNCE_MIN_DURATION = 0.1
+DEBOUNCE_MAX_DURATION = 10.0
+DEBOUNCE_DURATION_STEP = 0.1
+DEBOUNCE_DEFAULT_DURATION = 0.5
 
 # Runtime switch keys
 SWITCH_LIGHT_FLASH = "light_flash"
