@@ -65,7 +65,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required(
                     CONF_TRIGGER_ENTITY,
-                    default=self._data.get(CONF_TRIGGER_ENTITY, self._entry.data[CONF_TRIGGER_ENTITY]),
+                    default=self._data[CONF_TRIGGER_ENTITY],
                 ): selector.selector({
                     "entity": {"domain": "binary_sensor"}
                 }),
@@ -75,7 +75,8 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
     def _is_trigger_configured_elsewhere(self, trigger_entity: str) -> bool:
         return any(
             entry.entry_id != self._entry.entry_id
-            and entry.options.get(CONF_TRIGGER_ENTITY, entry.data.get(CONF_TRIGGER_ENTITY)) == trigger_entity
+            and (entry.options.get(CONF_TRIGGER_ENTITY) or entry.data.get(CONF_TRIGGER_ENTITY))
+            == trigger_entity
             for entry in self.hass.config_entries.async_entries(DOMAIN)
         )
 
