@@ -40,7 +40,7 @@ class _DoorbellDiagnosticSensor(SensorEntity):
     def _manager(self) -> DoorbellManager | None:
         if self.hass is None:
             return None
-        return self.hass.data[DOMAIN][self._entry.entry_id].get("manager")
+        return self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get("manager")
 
     async def async_added_to_hass(self) -> None:
         manager = self._manager

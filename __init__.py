@@ -130,10 +130,8 @@ class DoorbellManager:
         except Exception as err:
             self._log_event(
                 "warning",
-                (
-                    f"Failed to notify diagnostic listener {self._listener_name(listener)} "
-                    f"during registration: {self._format_exception(err)}."
-                ),
+                f"Failed to notify diagnostic listener {self._listener_name(listener)} during "
+                f"registration: {self._format_exception(err)}.",
             )
 
         def _remove_listener() -> None:
@@ -508,10 +506,11 @@ class DoorbellManager:
             announced.append(f"{entity_id} ({result})")
 
         if errors:
-            success_details = f"Succeeded on: {', '.join(announced)}. " if announced else ""
-            raise RuntimeError(
-                f"{success_details}Failed to announce on speaker(s): {'; '.join(errors)}"
-            )
+            details: list[str] = []
+            if announced:
+                details.append(f"Succeeded on: {', '.join(announced)}.")
+            details.append(f"Failed to announce on speaker(s): {'; '.join(errors)}")
+            raise RuntimeError(" ".join(details))
 
         return f"Announced on {len(announced)} speaker(s): {', '.join(announced)}."
 
