@@ -16,8 +16,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     async_add_entities([
-        DoorbellStatusSensor(hass, entry),
-        DoorbellTriggerSensor(hass, entry),
+        DoorbellStatusSensor(entry),
+        DoorbellTriggerSensor(entry),
     ])
 
 
@@ -25,8 +25,7 @@ class _DoorbellDiagnosticSensor(SensorEntity):
     _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, suffix: str, label: str) -> None:
-        self.hass = hass
+    def __init__(self, entry: ConfigEntry, suffix: str, label: str) -> None:
         self._entry = entry
         doorbell_name = entry.data[CONF_DOORBELL_NAME]
         self._attr_name = f"{doorbell_name} {label}"
@@ -34,6 +33,8 @@ class _DoorbellDiagnosticSensor(SensorEntity):
 
     @property
     def _manager(self):
+        if self.hass is None:
+            return None
         return self.hass.data[DOMAIN][self._entry.entry_id].get("manager")
 
     async def async_added_to_hass(self) -> None:
@@ -49,8 +50,8 @@ class _DoorbellDiagnosticSensor(SensorEntity):
 class DoorbellStatusSensor(_DoorbellDiagnosticSensor):
     _attr_icon = "mdi:bell-badge"
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, entry, "status", "Status")
+    def __init__(self, entry: ConfigEntry) -> None:
+        super().__init__(entry, "status", "Status")
 
     @property
     def native_value(self) -> str:
@@ -80,8 +81,8 @@ class DoorbellStatusSensor(_DoorbellDiagnosticSensor):
 class DoorbellTriggerSensor(_DoorbellDiagnosticSensor):
     _attr_icon = "mdi:motion-sensor"
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, entry, "trigger", "Trigger")
+    def __init__(self, entry: ConfigEntry) -> None:
+        super().__init__(entry, "trigger", "Trigger")
 
     @property
     def native_value(self) -> str:

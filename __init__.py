@@ -402,8 +402,8 @@ class DoorbellManager:
                 "rgb_color": state.attributes.get("rgb_color"),
             }
 
-        lights = [e for e in snapshots if e.split(".")[0] == "light"]
-        switches = [e for e in snapshots if e.split(".")[0] == "switch"]
+        lights = [entity_id for entity_id, snap in snapshots.items() if snap["domain"] == "light"]
+        switches = [entity_id for entity_id, snap in snapshots.items() if snap["domain"] == "switch"]
         lights_on = [e for e in lights if snapshots.get(e, {}).get("state") == "on"]
         lights_off = [e for e in lights if snapshots.get(e, {}).get("state") != "on"]
         sw_on = [e for e in switches if snapshots.get(e, {}).get("state") == "on"]
@@ -489,7 +489,7 @@ class DoorbellManager:
             announced.append(f"{entity_id} ({result})")
 
         if errors:
-            raise RuntimeError(f"Speaker announcement failures: {'; '.join(errors)}")
+            raise RuntimeError(f"Failed to announce on speaker(s): {'; '.join(errors)}")
 
         return f"Announced on {len(announced)} speaker(s): {', '.join(announced)}."
 
