@@ -15,7 +15,17 @@
     }
   },
   "options": {
+    "error": {
+      "already_configured": "This trigger entity is already configured."
+    },
     "step": {
+      "trigger": {
+        "title": "🔔 Trigger",
+        "description": "Choose the binary sensor that should start the doorbell actions.",
+        "data": {
+          "trigger_entity": "Trigger binary sensor"
+        }
+      },
       "light_flash": {
         "title": "💡 Light Flash",
         "description": "Flash one or more lights when the doorbell rings.",
