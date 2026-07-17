@@ -125,7 +125,13 @@ class DoorbellManager:
 
     def async_add_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         self._listeners.append(listener)
-        listener()
+        try:
+            listener()
+        except Exception as err:
+            self._log_event(
+                "warning",
+                f"Failed to notify a diagnostic listener during registration: {self._format_exception(err)}.",
+            )
 
         def _remove_listener() -> None:
             if listener in self._listeners:
@@ -135,7 +141,14 @@ class DoorbellManager:
 
     def _notify_listeners(self) -> None:
         for listener in tuple(self._listeners):
-            listener()
+            try:
+                listener()
+            except Exception as err:
+                _LOGGER.warning(
+                    "Smart Doorbell '%s': failed to update a diagnostic listener: %s",
+                    self._name,
+                    self._format_exception(err),
+                )
 
     def _switch_on(self, key: str) -> bool:
         return self.hass.data[DOMAIN][self.entry.entry_id]["switches"].get(key, False)
@@ -375,17 +388,22 @@ class DoorbellManager:
         snapshots: dict[str, dict[str, Any]] = {}
         for eid in entities:
             state = self.hass.states.get(eid)
-            if state:
-                snapshots[eid] = {
-                    "domain": eid.split(".")[0],
-                    "state": state.state,
-                    "brightness": state.attributes.get("brightness"),
-                    "color_temp": state.attributes.get("color_temp"),
-                    "rgb_color": state.attributes.get("rgb_color"),
-                }
+            if not state:
+                self._log_event(
+                    "warning",
+                    f"Light flash entity {eid} is unavailable or missing and was skipped.",
+                )
+                continue
+            snapshots[eid] = {
+                "domain": eid.split(".")[0],
+                "state": state.state,
+                "brightness": state.attributes.get("brightness"),
+                "color_temp": state.attributes.get("color_temp"),
+                "rgb_color": state.attributes.get("rgb_color"),
+            }
 
-        lights = [e for e in entities if e.split(".")[0] == "light"]
-        switches = [e for e in entities if e.split(".")[0] == "switch"]
+        lights = [e for e in snapshots if e.split(".")[0] == "light"]
+        switches = [e for e in snapshots if e.split(".")[0] == "switch"]
         lights_on = [e for e in lights if snapshots.get(e, {}).get("state") == "on"]
         lights_off = [e for e in lights if snapshots.get(e, {}).get("state") != "on"]
         sw_on = [e for e in switches if snapshots.get(e, {}).get("state") == "on"]
@@ -454,28 +472,31 @@ class DoorbellManager:
             return "No speaker entities configured."
 
         results = await asyncio.gather(
-            *(self._announce_speaker(cfg, overall_volume) for cfg in speaker_configs),
+            *(
+                self._announce_speaker(index, cfg, overall_volume)
+                for index, cfg in enumerate(speaker_configs, start=1)
+            ),
             return_exceptions=True,
         )
 
         announced: list[str] = []
         errors: list[str] = []
-        for cfg, result in zip(speaker_configs, results):
-            entity_id = cfg.get(CONF_SPEAKER_ENTITY, "<missing_entity_id>")
+        for index, (cfg, result) in enumerate(zip(speaker_configs, results), start=1):
+            entity_id = cfg.get(CONF_SPEAKER_ENTITY) or f"speaker_config_{index}"
             if isinstance(result, Exception):
                 errors.append(f"{entity_id}: {self._format_exception(result)}")
                 continue
             announced.append(f"{entity_id} ({result})")
 
         if errors:
-            raise RuntimeError("; ".join(errors))
+            raise RuntimeError(f"Speaker announcement failures: {'; '.join(errors)}")
 
         return f"Announced on {len(announced)} speaker(s): {', '.join(announced)}."
 
-    async def _announce_speaker(self, cfg: dict, overall_volume: float) -> str:
+    async def _announce_speaker(self, index: int, cfg: dict, overall_volume: float) -> str:
         entity_id: str = cfg.get(CONF_SPEAKER_ENTITY, "")
         if not entity_id:
-            raise ValueError("Missing speaker entity ID.")
+            raise ValueError(f"Missing speaker entity ID in speaker config #{index}.")
 
         set_volume: bool = cfg.get(CONF_SPEAKER_SET_VOLUME, True)
         vol_pct: float = cfg.get(CONF_SPEAKER_VOLUME, 80) / 100.0
