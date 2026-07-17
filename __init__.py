@@ -162,6 +162,9 @@ class DoorbellManager:
             return f"{err.__class__.__name__}: {message}"
         return err.__class__.__name__
 
+    def _speaker_label(self, index: int, cfg: dict[str, Any]) -> str:
+        return cfg.get(CONF_SPEAKER_ENTITY) or f"speaker_config_{index}"
+
     def _log_event(
         self,
         level: str,
@@ -402,12 +405,21 @@ class DoorbellManager:
                 "rgb_color": state.attributes.get("rgb_color"),
             }
 
-        lights = [entity_id for entity_id, snap in snapshots.items() if snap["domain"] == "light"]
-        switches = [entity_id for entity_id, snap in snapshots.items() if snap["domain"] == "switch"]
-        lights_on = [e for e in lights if snapshots.get(e, {}).get("state") == "on"]
-        lights_off = [e for e in lights if snapshots.get(e, {}).get("state") != "on"]
-        sw_on = [e for e in switches if snapshots.get(e, {}).get("state") == "on"]
-        sw_off = [e for e in switches if snapshots.get(e, {}).get("state") != "on"]
+        lights_on: list[str] = []
+        lights_off: list[str] = []
+        sw_on: list[str] = []
+        sw_off: list[str] = []
+        for entity_id, snap in snapshots.items():
+            if snap["domain"] == "light":
+                if snap["state"] == "on":
+                    lights_on.append(entity_id)
+                else:
+                    lights_off.append(entity_id)
+            elif snap["domain"] == "switch":
+                if snap["state"] == "on":
+                    sw_on.append(entity_id)
+                else:
+                    sw_off.append(entity_id)
 
         if lights_on:
             await self.hass.services.async_call(
@@ -482,7 +494,7 @@ class DoorbellManager:
         announced: list[str] = []
         errors: list[str] = []
         for index, (cfg, result) in enumerate(zip(speaker_configs, results), start=1):
-            entity_id = cfg.get(CONF_SPEAKER_ENTITY) or f"speaker_config_{index}"
+            entity_id = self._speaker_label(index, cfg)
             if isinstance(result, Exception):
                 errors.append(f"{entity_id}: {self._format_exception(result)}")
                 continue
@@ -494,9 +506,10 @@ class DoorbellManager:
         return f"Announced on {len(announced)} speaker(s): {', '.join(announced)}."
 
     async def _announce_speaker(self, index: int, cfg: dict, overall_volume: float) -> str:
+        entity_label = self._speaker_label(index, cfg)
         entity_id: str = cfg.get(CONF_SPEAKER_ENTITY, "")
         if not entity_id:
-            raise ValueError(f"Missing speaker entity ID in speaker config #{index}.")
+            raise ValueError(f"Missing speaker entity ID in {entity_label}.")
 
         set_volume: bool = cfg.get(CONF_SPEAKER_SET_VOLUME, True)
         vol_pct: float = cfg.get(CONF_SPEAKER_VOLUME, 80) / 100.0
