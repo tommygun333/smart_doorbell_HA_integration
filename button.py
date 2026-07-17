@@ -31,4 +31,4 @@ class DoorbellTestButton(ButtonEntity):
     async def async_press(self) -> None:
         manager = self.hass.data[DOMAIN][self._entry.entry_id].get("manager")
         if manager:
-            await manager._handle_ring()
+            await manager._handle_ring(source="test_button")

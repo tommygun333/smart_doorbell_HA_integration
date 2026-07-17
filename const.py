@@ -1,5 +1,5 @@
 DOMAIN = "smart_doorbell"
-PLATFORMS = ["switch", "button"]
+PLATFORMS = ["switch", "button", "sensor"]
 
 # Core config
 CONF_DOORBELL_NAME = "doorbell_name"
