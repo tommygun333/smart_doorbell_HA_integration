@@ -130,7 +130,10 @@ class DoorbellManager:
         except Exception as err:
             self._log_event(
                 "warning",
-                f"Failed to notify a diagnostic listener during registration: {self._format_exception(err)}.",
+                (
+                    f"Failed to notify diagnostic listener {self._listener_name(listener)} "
+                    f"during registration: {self._format_exception(err)}."
+                ),
             )
 
         def _remove_listener() -> None:
@@ -145,8 +148,9 @@ class DoorbellManager:
                 listener()
             except Exception as err:
                 _LOGGER.warning(
-                    "Smart Doorbell '%s': failed to update a diagnostic listener: %s",
+                    "Smart Doorbell '%s': failed to update diagnostic listener %s: %s",
                     self._name,
+                    self._listener_name(listener),
                     self._format_exception(err),
                 )
 
@@ -163,7 +167,10 @@ class DoorbellManager:
         return err.__class__.__name__
 
     def _speaker_label(self, index: int, cfg: dict[str, Any]) -> str:
-        return cfg.get(CONF_SPEAKER_ENTITY) or f"speaker_config_{index}"
+        return cfg.get(CONF_SPEAKER_ENTITY) or f"speaker_config_index_{index}"
+
+    def _listener_name(self, listener: Callable[[], None]) -> str:
+        return getattr(listener, "__qualname__", getattr(listener, "__name__", type(listener).__name__))
 
     def _log_event(
         self,
@@ -501,7 +508,10 @@ class DoorbellManager:
             announced.append(f"{entity_id} ({result})")
 
         if errors:
-            raise RuntimeError(f"Failed to announce on speaker(s): {'; '.join(errors)}")
+            success_details = f"Succeeded on: {', '.join(announced)}. " if announced else ""
+            raise RuntimeError(
+                f"{success_details}Failed to announce on speaker(s): {'; '.join(errors)}"
+            )
 
         return f"Announced on {len(announced)} speaker(s): {', '.join(announced)}."
 

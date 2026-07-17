@@ -1,6 +1,8 @@
 """Diagnostic sensors for Smart Doorbell."""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
@@ -8,6 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_DOORBELL_NAME, DOMAIN
+
+if TYPE_CHECKING:
+    from . import DoorbellManager
 
 
 async def async_setup_entry(
@@ -32,7 +37,7 @@ class _DoorbellDiagnosticSensor(SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_{suffix}"
 
     @property
-    def _manager(self):
+    def _manager(self) -> DoorbellManager | None:
         if self.hass is None:
             return None
         return self.hass.data[DOMAIN][self._entry.entry_id].get("manager")
