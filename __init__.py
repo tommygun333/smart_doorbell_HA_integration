@@ -433,7 +433,7 @@ class DoorbellManager:
                         "switch", "turn_on", {"entity_id": eid}, blocking=True
                     )
 
-        return f"Flashed {len(entities)} entities for {duration:.1f}s."
+        return f"Flashed {len(snapshots)} entities for {duration:.1f}s."
 
     async def _send_telegram(self) -> str:
         opts = self.entry.options
@@ -461,7 +461,7 @@ class DoorbellManager:
         announced: list[str] = []
         errors: list[str] = []
         for cfg, result in zip(speaker_configs, results):
-            entity_id = cfg.get(CONF_SPEAKER_ENTITY, "not_configured")
+            entity_id = cfg.get(CONF_SPEAKER_ENTITY, "<missing_entity_id>")
             if isinstance(result, Exception):
                 errors.append(f"{entity_id}: {self._format_exception(result)}")
                 continue
@@ -481,7 +481,7 @@ class DoorbellManager:
         vol_pct: float = cfg.get(CONF_SPEAKER_VOLUME, 80) / 100.0
         effective_volume = round(min(vol_pct * overall_volume, 1.0), 2)
         content_type: str = cfg.get(CONF_MEDIA_CONTENT_TYPE, "audio/mpeg")
-        startup_delay: float = cfg.get(CONF_SPEAKER_STARTUP_DELAY, 0)
+        playback_delay: float = cfg.get(CONF_SPEAKER_STARTUP_DELAY, 0)
 
         ringtone: str = cfg.get(CONF_RINGTONE_PATH, "")
         ringtone_dur: int = cfg.get(CONF_RINGTONE_DURATION, 3)
@@ -506,8 +506,8 @@ class DoorbellManager:
                 blocking=True,
             )
 
-        if startup_delay > 0:
-            await asyncio.sleep(startup_delay)
+        if playback_delay > 0:
+            await asyncio.sleep(playback_delay)
 
         if ringtone:
             await self.hass.services.async_call(
