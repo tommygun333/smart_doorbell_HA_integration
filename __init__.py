@@ -165,7 +165,7 @@ class DoorbellManager:
         return err.__class__.__name__
 
     def _speaker_label(self, index: int, cfg: dict[str, Any]) -> str:
-        return cfg.get(CONF_SPEAKER_ENTITY) or f"speaker_config_index_{index}"
+        return cfg.get(CONF_SPEAKER_ENTITY) or f"Speaker #{index}"
 
     def _listener_name(self, listener: Callable[[], None]) -> str:
         return getattr(listener, "__qualname__", getattr(listener, "__name__", type(listener).__name__))
@@ -219,7 +219,7 @@ class DoorbellManager:
                     f"Accepted trigger transition for {trigger}: {old.state} -> {new.state}.",
                     last_reason=f"Accepted trigger transition {old.state} -> {new.state}.",
                 )
-                self.hass.async_create_task(self._handle_ring(source="trigger_entity"))
+                self.hass.async_create_task(self._handle_ring(trigger_source="trigger_entity"))
                 return
             self._log_event(
                 "debug",
@@ -285,7 +285,7 @@ class DoorbellManager:
             )
             return False
 
-    async def _handle_ring(self, source: str = "trigger_entity") -> None:
+    async def _handle_ring(self, trigger_source: str = "trigger_entity") -> None:
         if self._is_debounced():
             return
 
@@ -298,12 +298,12 @@ class DoorbellManager:
 
         self._log_event(
             "info",
-            f"Doorbell ring accepted from {source}.",
+            f"Doorbell ring accepted from {trigger_source}.",
             status="triggered",
             error=None,
-            last_reason=f"Doorbell ring accepted from {source}.",
+            last_reason=f"Doorbell ring accepted from {trigger_source}.",
             last_triggered_at=trigger_time,
-            last_trigger_source=source,
+            last_trigger_source=trigger_source,
             dnd_active=dnd,
             last_actions={},
         )
@@ -391,7 +391,7 @@ class DoorbellManager:
         entities: list[str] = opts.get(CONF_LIGHT_ENTITIES, [])
         duration: float = opts.get(CONF_LIGHT_FLASH_DURATION, 1.0)
         if not entities:
-            return "No light entities configured."
+            return "No light entities were available to flash."
 
         snapshots: dict[str, dict[str, Any]] = {}
         for eid in entities:
@@ -485,9 +485,6 @@ class DoorbellManager:
         opts = self.entry.options
         speaker_configs: list[dict] = opts.get(CONF_SPEAKER_CONFIGS, [])
         overall_volume: float = opts.get(CONF_OVERALL_VOLUME, 80) / 100.0
-        if not speaker_configs:
-            return "No speaker entities configured."
-
         results = await asyncio.gather(
             *(
                 self._announce_speaker(index, cfg, overall_volume)
@@ -539,7 +536,7 @@ class DoorbellManager:
                 "warning",
                 f"Speaker {entity_id} skipped because no ringtone or TTS is configured.",
             )
-            return "skipped: no ringtone or TTS configured"
+            return "Skipped because no ringtone or TTS is configured."
 
         if set_volume:
             await self.hass.services.async_call(
@@ -593,7 +590,7 @@ class DoorbellManager:
                     "warning",
                     f"Speaker {entity_id} has TTS enabled but no valid TTS source is configured.",
                 )
-                return "warning: TTS enabled without a valid source"
+                return "TTS is enabled but no valid source is configured."
 
         details: list[str] = []
         if ringtone:
