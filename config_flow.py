@@ -37,16 +37,50 @@ class SmartDoorbellConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         self._entry = config_entry
+        self._data = dict(config_entry.data)
         self._options = dict(config_entry.options)
         self._selected_speakers: list[str] = []
         self._speaker_configs: list[dict] = []
         self._speaker_index: int = 0
 
     async def async_step_init(self, user_input=None):
-        return await self.async_step_light_flash()
+        return await self.async_step_trigger()
 
     # ------------------------------------------------------------------ #
-    # Step 1 — Light Flash
+    # Step 1 — Trigger
+    # ------------------------------------------------------------------ #
+    async def async_step_trigger(self, user_input=None):
+        errors = {}
+        if user_input is not None:
+            trigger_entity = user_input[CONF_TRIGGER_ENTITY]
+            if self._is_trigger_configured_elsewhere(trigger_entity):
+                errors["base"] = "already_configured"
+            else:
+                self._data[CONF_TRIGGER_ENTITY] = trigger_entity
+                return await self.async_step_light_flash()
+
+        return self.async_show_form(
+            step_id="trigger",
+            errors=errors,
+            data_schema=vol.Schema({
+                vol.Required(
+                    CONF_TRIGGER_ENTITY,
+                    default=self._data[CONF_TRIGGER_ENTITY],
+                ): selector.selector({
+                    "entity": {"domain": "binary_sensor"}
+                }),
+            }),
+        )
+
+    def _is_trigger_configured_elsewhere(self, trigger_entity: str) -> bool:
+        return any(
+            entry.entry_id != self._entry.entry_id
+            and (entry.options.get(CONF_TRIGGER_ENTITY) or entry.data.get(CONF_TRIGGER_ENTITY))
+            == trigger_entity
+            for entry in self.hass.config_entries.async_entries(DOMAIN)
+        )
+
+    # Step 2 — Light Flash
     # ------------------------------------------------------------------ #
     async def async_step_light_flash(self, user_input=None):
         if user_input is not None:
@@ -84,7 +118,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 2 — Telegram
+    # Step 3 — Telegram
     # ------------------------------------------------------------------ #
     async def async_step_telegram(self, user_input=None):
         if user_input is not None:
@@ -107,7 +141,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 3 — Speaker global
+    # Step 4 — Speaker global
     # ------------------------------------------------------------------ #
     async def async_step_speaker(self, user_input=None):
         if user_input is not None:
@@ -153,7 +187,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 4 — Per-speaker detail
+    # Step 5 — Per-speaker detail
     # ------------------------------------------------------------------ #
     async def async_step_speaker_detail(self, user_input=None):
         entity_id = self._selected_speakers[self._speaker_index]
@@ -252,7 +286,7 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 5 — Debounce
+    # Step 6 — Debounce
     # ------------------------------------------------------------------ #
     async def async_step_debounce(self, user_input=None):
         if user_input is not None:
@@ -281,11 +315,13 @@ class SmartDoorbellOptionsFlow(config_entries.OptionsFlow):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 6 — Do Not Disturb
+    # Step 7 — Do Not Disturb
     # ------------------------------------------------------------------ #
     async def async_step_dnd(self, user_input=None):
         if user_input is not None:
             self._options.update(user_input)
+            if self._data != self._entry.data:
+                self.hass.config_entries.async_update_entry(self._entry, data=self._data)
             return self.async_create_entry(title="", data=self._options)
 
         opts = self._options
