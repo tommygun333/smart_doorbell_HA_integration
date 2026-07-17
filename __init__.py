@@ -372,7 +372,7 @@ class DoorbellManager:
         if not entities:
             return "No light entities configured."
 
-        snapshots: dict[str, dict] = {}
+        snapshots: dict[str, dict[str, Any]] = {}
         for eid in entities:
             state = self.hass.states.get(eid)
             if state:
@@ -461,7 +461,7 @@ class DoorbellManager:
         announced: list[str] = []
         errors: list[str] = []
         for cfg, result in zip(speaker_configs, results):
-            entity_id = cfg.get(CONF_SPEAKER_ENTITY, "unknown")
+            entity_id = cfg.get(CONF_SPEAKER_ENTITY, "not_configured")
             if isinstance(result, Exception):
                 errors.append(f"{entity_id}: {self._format_exception(result)}")
                 continue
